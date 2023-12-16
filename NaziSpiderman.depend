@@ -1,0 +1,156 @@
+# depslib dependency file v1.0
+1670793727 source:d:\code\nazispiderman\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"graphical_blocks.h"
+	"test.h"
+	<cmath>
+
+1669380182 d:\code\nazispiderman\button.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+
+1670785356 d:\code\nazispiderman\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1669480365 d:\code\nazispiderman\test.h
+
+1670863888 source:e:\vers2\nazispiderman\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"graphical_blocks.h"
+	"test.h"
+	<cmath>
+
+1670863888 e:\vers2\nazispiderman\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1669480365 e:\vers2\nazispiderman\test.h
+
+1670951276 source:d:\code\v2.0.1\bin\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"graphical_blocks.h"
+	"test.h"
+	<cmath>
+
+1670951290 d:\code\v2.0.1\bin\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1670948073 d:\code\v2.0.1\bin\test.h
+
+1671457777 source:d:\code\v202w\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"test.h"
+	<cmath>
+	"graphical_blocks.h"
+
+1671458281 d:\code\v202w\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1670948073 d:\code\v202w\test.h
+
+1672245531 source:c:\users\maria\downloads\v202w\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"test.h"
+	<cmath>
+	"graphical_blocks.h"
+
+1670948073 c:\users\maria\downloads\v202w\test.h
+
+1672249544 c:\users\maria\downloads\v202w\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1672666702 source:e:\ip172\lol\v202w\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"test.h"
+	<cmath>
+	"graphical_blocks.h"
+
+1670948074 e:\ip172\lol\v202w\test.h
+
+1672666309 e:\ip172\lol\v202w\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1672737229 source:c:\users\maria\downloads\v204 (1) 2\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	"test.h"
+	<cmath>
+	"graphical_blocks.h"
+
+1670948074 c:\users\maria\downloads\v204 (1) 2\test.h
+
+1672738308 c:\users\maria\downloads\v204 (1) 2\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1673168829 source:c:\users\maria\downloads\v205\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	<cmath>
+	"syntax_checking.h"
+	"graphical_blocks.h"
+
+1670948074 c:\users\maria\downloads\v205\test.h
+
+1673281449 c:\users\maria\downloads\v205\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
+1673281449 c:\users\maria\downloads\v205\syntax_checking.h
+	<fstream>
+	<string.h>
+
+1673282810 source:c:\proiect nassi schneidermann\proiect maria\main.cpp
+	<iostream>
+	<graphics.h>
+	<cstring>
+	<cmath>
+	"syntax_checking.h"
+	"graphical_blocks.h"
+
+1673281450 c:\proiect nassi schneidermann\proiect maria\syntax_checking.h
+	<fstream>
+	<string.h>
+
+1673282750 c:\proiect nassi schneidermann\proiect maria\graphical_blocks.h
+	<iostream>
+	<graphics.h>
+	<winbgim.h>
+	<cmath>
+
