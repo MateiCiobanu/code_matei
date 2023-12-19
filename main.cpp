@@ -1,421 +1,658 @@
 #include <iostream>
+#include <fstream>
 #include <graphics.h>
 #include <cstring>
-#define max_children 100
-#include<cmath>
-#include "syntax_checking.h"
+#include "adder.h"
+
 using namespace std;
 
-char buffer[250];
+int curent=0;
+bool ok = false;
 
-struct node{ //david
-    node*children[max_children];
-    int number_of_children = 0;
-    node*parent = NULL;
-    char text[150];
-    int type = -1; ///-1 = ROOT/ 0 = ATRIBUIRE/ 1 = IF/ 2 = WHILE/ 3 = FOR/ 4 = DO WHILE/ 5 = SWITCH/6 = BREAK/7 = ELSE
-    int offset = 0;
-    bool visited = false;
-    int ind;
-    char condexec[150];
-    int indch;
-    node*partner = NULL;//nod partener pentru gasirea perechii
-    int isclicked;
+
+class screen{
+public:
+    const char* img;                            //the image that opens
+    int sheight = getmaxheight();               //height of the screen
+    int swidth = getmaxwidth();                 //width of the screen
+    void open_image()                           //opens the background image
+    {
+        initwindow(swidth, sheight, "Nassi-Schneidermann", 0, 0);
+        readimagefile(img, 0, 0, swidth, sheight);
+    }
+    void close_screen()
+    {
+        getch();
+        closegraph();
+    }
 };
 
-struct sentence_matrix{ //david
-    int offs;
-    char instr[200];
-}mat[1000];
-
-int offset(char buffer[]) //david
-{
-    int i = 0;
-    while(!isalnum(buffer[i]))i++;
-    return i;
-}
-#include "graphical_blocks.h"
-
-void initialize_node(node*&t, char content[150], int node_offset, int node_type, int ind) //david
-{
-    //t = NULL;
-//    t->children = new node*[max_children];
-//    for(int i= 1; i <= 100; i++)
-//            t->children[i] = new node;
-    strcpy(t->text,content);
-    t->offset = node_offset;
-    t->type = node_type;
-    t->number_of_children = 0;
-    t->parent = NULL;
-    //t->children[1]= NULL;
-    t->visited = false;
-    t->ind = ind;
-    strcpy(t->condexec, "-1");
-    t->indch = 0;
-    t->isclicked = -1;
-}
-void read_code(int&nofsentences) //david
-{
-    FILE*fis;
-    fis = fopen("input.txt", "r");
-    nofsentences = 0;
-    if (fis == NULL) perror ("Error opening file");
-    else
-    {
-        while(!feof(fis))
-        {
-            fgets(buffer, 250, fis);
-            nofsentences++;
-            strcpy(mat[nofsentences].instr, buffer);
-            mat[nofsentences].offs = offset(buffer);
-        }
+class start_screen : public screen{
+public:
+    start_screen(){
+        img = "start_image.img";
     }
-}
-//debug
-void print_node(node*t) //david
-{
-    if(t->parent!=NULL)
-    cout << "parinte: " << t->parent -> ind << " | ";
-    cout << "type: " << t -> type << " | ";
-    cout << "ind: " << t->ind << " | ";
-    cout << "indch: " << t->indch << " | ";
-    cout << "text: " << t->text<<endl;
-}
+};
 
-void afisare(node*t) //david
-{
-    print_node(t);
-//    if(t->parent != NULL)
-//    {
-//        cout << "parinte: " << t->parent->ind << " | ";
-//    }
-    if(t->children[1]!=NULL)
+class button{
+public:
+    int top, bottom, left, right;                    //coordonates
+    int width, height;                               //dimensions
+    int button_color, frame_color, text_color;       //color of the button and of the frame surrounding the button
+    char text[20];                                   //text inside the button
+    int text_length, text_height;                    //length and height of text
+    void create_button()
     {
-        for(int i = 1; i <= t->number_of_children; ++i)
-            afisare(t->children[i]);
+        setfillstyle(1, button_color);
+        bar(top, left, bottom, right);
+        setcolor(frame_color);
+        setlinestyle(0, 0, 3);
+        rectangle(top, left, bottom, right);
     }
-}
-
-bool iswhile(node*root) //david
-{
-    return(strstr(root->text, "cat timp executa"));
-}
-
-bool isdowhile(node*root) //david
-{
-    return(strstr(root->text, "executa") or strstr(root->text, "repeta"));
-}
-
-void desenare3(node*t, int x, int&y, int w, int xm, int ym) //david
-{
-    //trece prin fiecare instructiune, ii calculeaza coordonatele grafice si o deseneaza
-    int yinit = y;
-    int ycopy;
-    for(int i = 1; i <= t->number_of_children; i++)
+    void put_text()
     {
-        node*current=t->children[i];
-        switch(current->type)
+        int x, y;                                   //coordinates of the text where it starts
+        setcolor(text_color);                       //we set the text color
+        setbkcolor(button_color);                   //we set the background text color
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 4);   //we set the font, dimension, direction
+        text_height = textheight(text);             //we save the height and length only after aplying fonts
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;          //x starts from the x of the button, we add half the width of the button and substract the half the length of the text
+        y = left + height/2 - text_height/2;        //y starts from the y of the button, we add half of the height of the button and substract half od the height of the text
+        outtextxy(x, y, text);
+    }
+    void open_window(int a, int b)
+    {
+        initgraph(&a, &b, "");
+    }
+    bool is_inside_button()
+    {
+        clearmouseclick(WM_LBUTTONDOWN);
+        int mx = mousex();
+        int my = mousey();
+        return (mx >= top && mx <= top + width && my >= left && my <= left + height);
+    }
+    void draw_menu();
+    void search_for_mouse_activity();
+};
+
+
+class rectangle_button : public button{
+public:
+    rectangle_button(){
+        width = 200, height = 100;
+        button_color = LIGHTGRAY, frame_color = DARKGRAY, text_color = WHITE;
+    }
+};
+
+class square_button : public button{
+public:
+    square_button(){
+        width = 50, height = 50;
+        button_color = LIGHTGRAY, frame_color = DARKGRAY, text_color = WHITE;
+    }
+};
+
+class exit_button : public square_button{
+public:
+    //const char* img = "x.jpg";
+    exit_button(){
+        button_color = LIGHTRED, frame_color = DARKGRAY, text_color = WHITE;
+    }
+    void close_program(){
+        ok = true;
+        closegraph();
+        exit(0);
+    }
+    void open_image()
+    {
+        readimagefile("x.jpg", top, left, width, height);
+    }
+    void put_text()
+    {
+        int x, y;
+        setcolor(text_color);
+        setbkcolor(button_color);
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 1);
+        text_height = textheight(text);
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;
+        y = left + height/2 - text_height/2;
+        outtextxy(x, y, text);
+    }
+};
+
+class diagram_button : public button{
+public:
+    diagram_button (){
+        top = 150, left = 300, bottom = 350, right = 400;
+        width = 200, height = 100;
+        button_color = COLOR(33,64,95), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+class presets_button : public button{
+public:
+    presets_button (){
+        top = 150, left = 475, bottom = 350, right = 575;
+        width = 200, height = 100;
+        button_color = COLOR(33,64,95), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+class back_button : public button{
+public:
+    back_button (){
+        top = 150, left = 650, bottom = 350, right = 750;
+        width = 200, height = 100;
+        button_color = COLOR(33,64,95), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+class text_input_button : public button{
+public:
+    text_input_button (){
+        top = 500, left = 150, bottom = 1800, right = 900;
+        width = 575, height = 700;
+        button_color = COLOR(33,64,95), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+    void open_text_input(){
+
+    }
+};
+
+class start_button : public rectangle_button{
+public:
+    void open_program_start()
+    {
+        setbkcolor(COLOR(100, 155, 187));
+        cleardevice();
+
+        diagram_button dgr;
+        presets_button pre;
+        back_button bck;
+        text_input_button ti;
+
+
+        dgr.create_button();
+        strcpy(dgr.text, "Diagram");
+        dgr.put_text();
+
+        pre.create_button();
+        strcpy(pre.text, "Presets");
+        pre.put_text();
+
+        bck.create_button();
+        strcpy(bck.text, "Back");
+        bck.put_text();
+
+        ti.create_button();
+    }
+};
+
+
+class atribuire_button : public button{
+public:
+    atribuire_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 100, bottom = getmaxwidth()/2 + width/2, right = 200;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+    void put_text()
+    {
+        int x, y;
+        setcolor(text_color);
+        setbkcolor(button_color);
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 3);
+        text_height = textheight(text);
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;
+        y = left + height/2 - text_height/2;
+        outtextxy(x, y, text);
+    }
+};
+
+class daca_button : public button{
+public:
+    daca_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 250, bottom = getmaxwidth()/2 + width/2, right = 350;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+class pentru_button : public button{
+public:
+    pentru_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 400, bottom = getmaxwidth()/2 + width/2, right = 500;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+class cat_timp_button : public button{
+public:
+    cat_timp_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 550, bottom = getmaxwidth()/2 + width/2, right = 650;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+    void put_text()
+    {
+        int x, y;
+        setcolor(text_color);
+        setbkcolor(button_color);
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 3);
+        text_height = textheight(text);
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;
+        y = left + height/2 - text_height/2;
+        outtextxy(x, y, text);
+    }
+};
+
+class pana_cand_button : public button{
+public:
+    pana_cand_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 700, bottom = getmaxwidth()/2 + width/2, right = 800;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+    void put_text()
+    {
+        int x, y;
+        setcolor(text_color);
+        setbkcolor(button_color);
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 3);
+        text_height = textheight(text);
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;
+        y = left + height/2 - text_height/2;
+        outtextxy(x, y, text);
+    }
+};
+class cazuri_button : public button{
+public:
+    cazuri_button (){
+        width = 200, height = 100;
+        top = getmaxwidth()/2 - width/2, left = 850, bottom = getmaxwidth()/2 + width/2, right = 950;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+class back_info_button: public button{
+public:
+    back_info_button(){
+        width = 200, height = 100;
+        top = 50, left = 50, bottom = 250, right = 150;
+        button_color = COLOR(160,82,45), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+
+
+
+
+class info_button : public rectangle_button {
+public:
+    void open_program_info()
+    {
+        setbkcolor(COLOR(255,228,196));
+        cleardevice();
+
+        atribuire_button atb;
+        daca_button dc;
+        pentru_button pt;
+        cat_timp_button ct;
+        pana_cand_button pc;
+        cazuri_button cz;
+        back_info_button bck;
+
+        atb.create_button();
+        strcpy(atb.text, "Atribuire");
+        atb.put_text();
+
+        dc.create_button();
+        strcpy(dc.text, "Daca");
+        dc.put_text();
+
+        pt.create_button();
+        strcpy(pt.text, "Pentru");
+        pt.put_text();
+
+        ct.create_button();
+        strcpy(ct.text, "Cat timp");
+        ct.put_text();
+
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 2);
+        pc.create_button();
+        strcpy(pc.text, "Pana cand");
+        pc.put_text();
+
+        cz.create_button();
+        strcpy(cz.text, "Cazuri");
+        cz.put_text();
+
+        bck.create_button();
+        strcpy(bck.text, "Back");
+        bck.put_text();
+
+
+
+    }
+};
+
+class language_button : public button{
+public:
+    language_button(){
+        width = 200, height = 100;
+        top = 500, left = 500, bottom = 700, right = 600;
+        button_color = COLOR(85, 107, 47), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+    void put_text()
+    {
+        int x, y;
+        setcolor(text_color);
+        setbkcolor(button_color);
+        settextstyle(TRIPLEX_FONT, HORIZ_DIR, 3);
+        text_height = textheight(text);
+        text_length = textwidth(text);
+        x = top + width/2 - text_length/2;
+        y = left + height/2 - text_height/2;
+        outtextxy(x, y, text);
+    }
+};
+
+class back_settings_button : public button {
+public:
+     back_settings_button(){
+        width = 200, height = 100;
+        top = 50, left = 50, bottom = 250, right = 150;
+        button_color = COLOR(85, 107, 47), frame_color = COLOR(255,250,226), text_color = WHITE;
+    }
+};
+
+class settings_button : public rectangle_button{
+public:
+    void open_program_settings()
+    {
+        setbkcolor(COLOR(143, 188, 143));
+        cleardevice();
+
+        language_button language;
+        back_settings_button bck;
+
+        language.create_button();
+        strcpy(language.text, "Language");
+        language.put_text();
+
+        bck.create_button();
+        strcpy(bck.text, "Back");
+        bck.put_text();
+
+    }
+};
+
+class chat_button : public square_button{
+public:
+    int GdChat = DETECT, GmChat;
+    char input[100];
+    void open_chat()
+    {
+        clearmouseclick(WM_LBUTTONDOWN);
+        open_window(GdChat, GmChat);
+
+        int x = 10, y = 10;
+        outtextxy(x, y, "Hello. How can I help you?");
+
+        do
         {
-        case 0:
+            cin.getline(input, 100);
+            if (strcmp(input, "How to use an if?")== 0 || strcmp(input, "How to use a while?") == 0 || strcmp(input, "How to use a for?") ==0)
             {
-                if((xm > x and xm < x+w) and (ym > y and ym < y + defaultheight))
-                    current->isclicked*=-1, xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                drawAtrib(current, current->text, x, x+w, y);
-                y+=defaultheight;
-                break;
+                    outtextxy(x, y+=30, "Please go back and click on the info button to know more about this.");
             }
-        case 1:
+            else if (strcmp(input, "How to use this app?") == 0)
             {
-                if((xm > x and xm < x+w) and (ym > y and ym < y + defaultheight))
-                    current->isclicked*=-1, xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                char cond[150];
-                int lenif = strlen("daca "), lenthen = strlen(" atunci");
-                int len = strlen(current->text)-lenif - lenthen -offset(current->text);
-                strncpy(cond, strstr(current->text, "daca")+lenif, len);
-                cond[len] = NULL;
-                int ystart = y;
-                y+=defaultheight;
-                ycopy = y;
-                int wcopy = w;
-                desenare3(current, x, y, w/2, xm, ym);
-                if(current->indch < t->number_of_children and t->children[i+1]->type == 7)
-                   /*t->children[i+1]->isclicked = current->isclicked, */desenare3(t->children[i+1], x+w/2, ycopy, w/2, xm, ym);
-                y = max(y, ycopy);
-                drawIf(current, cond, x, x+w, ystart, y);
-                break;
+                    outtextxy(x, y+=30, "Press the START button and introduce your code in the correct order");
+                    outtextxy(x, y+=30, "and the result will be the representative diagram");
             }
-        case 2:
+            else if (strcmp(input, "exit") == 0)
             {
-                ycopy = y;
-                y+=defaultheight;
-                desenare3(current, x+25, y, w-25, xm, ym);
-                if(((xm > x and xm < x+w) and (ym > ycopy and ym < ycopy + defaultheight)) or ((xm > x and xm < x+25) and (ym > ycopy + defaultheight and ym < y)))
-                    current->isclicked*=-1, xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                drawWhile(current, current->text, x, x+w, ycopy, y);
-                break;
+                outtextxy(x, y+=30, "Nice talking to you. Press any key to exit.");
             }
-        case 3:
+            else
             {
-                ycopy = y;
-                y+=defaultheight;
-               desenare3(current, x+25, y, w-25, xm, ym);
-                if(((xm > x and xm < x+w) and (ym > ycopy and ym < ycopy + defaultheight)) or ((xm > x and xm < x+25) and (ym > ycopy + defaultheight and ym < y)))
-                    current->isclicked*=-1, xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                drawFor(current, current->text, x, x+w, ycopy, y);
-                break;
+                    outtextxy(x, y+=30, "I'm sorry. I'm not smart enough to understand that.");
             }
-        case 4:
-            {
-                //left+float(i-1)*w/n, yend, left+float(i-1)*w/n, ystart + float(i-1)*float(defaultheight)/n
-                if(isdowhile(current))
-                {
-                    ycopy = y;
-                    desenare3(current, x+25, y, w-25, xm, ym);
-                    //y+=(getdepth(current)+1)*50;
-                    if(((xm > x and xm < x+25) and (ym > ycopy and ym < y)) or ((xm > x and xm < x+w) and (ym > y and ym < y+ defaultheight)))
-                        current->isclicked*=-1, /*t->children[current->indch+1]->isclicked = current->isclicked*/xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                    drawDoWhile(current, current->condexec, x, x+w, ycopy, y);
-                    y+=defaultheight;
-                }
-                break;
-            }
-        case 5:
-            {
-                if((xm > x and xm < x+w) and (ym > y and ym < y + defaultheight))
-                    current->isclicked*=-1, xm = -1, ym = -1, desenare3(current->parent, x, yinit, w,xm, ym);
-                int n = current->number_of_children;
-                ycopy = y;
-                int ymax = y;
-                y+=defaultheight;
-                int ycopy2 = y;
-                int xcopy = x;
-                //cout << n;
-                for(int i = 1; i <= n; ++i)
-                {
-                        //cout << xcopy << endl;
-                        desenare3(current->children[i], x+float(i-1)*w/n, ycopy2, w/n, xm ,ym);
-                        xcopy+=w/n;
-                        //cout << ycopy2<<endl;
-                        if(ycopy2 > ymax)ymax = ycopy2;
-                        ycopy2 = y;
-                }
-                char txt[100];
-                strcpy(txt, current->text + offset(current->text) + strlen("switch("));
-                txt[strlen(txt)-2] = NULL;
-                drawSwitch(txt, x, x+w, ycopy ,ymax, n, current);
-                y = ymax;
-                //cout << ycopy << " " << ymax << " " << n << endl;
-                break;
-            }
-        }
+        }while(strcmp(input, "exit") != 0);
+        getch();
     }
-}
-void settype(node*&t) //david
-{
-    //CHECK FOR IF
-    if(strstr(t->text+t->offset, "daca"))
-        t->type = 1;
-    //CHECK FOR ELSE
-    else if(strstr(t->text+t->offset, "altfel"))
-    {
-        t->type = 7;
-        t->ind = t->parent->children[t->indch-1]->ind;
-        //t->partner = t->parent->children[t->indch-1];
-    }
-    //CHECK FO DO WHILE
-    else if((strstr(t->text+t->offset, "cat timp") and !strstr(t->text+t->offset, "executa")) or strstr(t->text+t->offset, "pana cand"))
-    {
-        t->type = 4;
-        t->ind = t->parent->children[t->indch-1]->ind;
-        t->parent->children[t->indch-1]->type = 4;
-        strcpy(t->parent->children[t->indch-1]->condexec, t->text);
-    }
-    //CHECK FOR FOR
-    else if(strstr(t->text+t->offset,"pentru"))
-    {
-        t-> type = 3;
-    }
-    //CHECK FOR WHILE
-    else if(strstr(t->text+t->offset,"cat timp") and strstr(t->text+t->offset,"executa"))
-    {
-        t->type = 2;
-    }
-    //CHECK FOR SWITCH
-    else if(strstr(t->text+t->offset,"switch"))
-    {
-        t->type = 5;
-    }
-    else if(strstr(t->text+t->offset,"break"))
-        t->type = 6;
-    //CHECK FOR ASSIGNATION
-    else t->type = 0;
-}
-void build_forest(int number_of_nodes, node*root) //david
-{
-    //functia cauta intr-o stiva parintele instructiunii citite curent, in functie de offset
-    node*stak[number_of_nodes];
-    int lastindex = 0;
-    stak[lastindex] = root;
-    for(int i = 1; i <= number_of_nodes; ++i)
-    {
-        node*t = new node;
-        initialize_node(t, mat[i].instr, mat[i].offs, 0, i);
-        while(lastindex!=0 and stak[lastindex]->offset >= t->offset)
-        {
-            lastindex--;
-        }
-        stak[lastindex]->number_of_children++;
-        stak[lastindex]->children[stak[lastindex]->number_of_children] = t;
-        t->parent = stak[lastindex];
-        t->indch = stak[lastindex]->number_of_children;
-        settype(t);
-        lastindex++;
-        stak[lastindex] = t;
-    }
-}
+    closegraph();
+};
 
-void drawscrollbutton() //maria
-{
-    setcolor(BLACK);
-    setfillstyle(SOLID_FILL,COLOR(255, 182, 193)); //roz
-    //settextstyle(3, HORIZ_DIR, 3);
-    setbkcolor(COLOR(255, 182, 193));
-    int i;
-    for (i=1; i<=3; i++)
-    {
-        Buton[i].D.stangasus.x=DIAGRAM_WIDTH+50;
-        Buton[i].D.dreaptajos.x=DIAGRAM_WIDTH+100;
-        Buton[i].D.stangasus.y=510+40*(i-1);
-        Buton[i].D.dreaptajos.y=510+40*i-10;
 
-        switch(i)
-        {
-        case 1:
-            strcpy(Buton[i].text,"ScrollU");
-            break;
-        case 2:
-            strcpy(Buton[i].text,"ScrollD");
-            break;
-        case 3:
-            strcpy(Buton[i].text, b4[limba]);
-            break;
-        }
-        bar(Buton[i].D.stangasus.x, Buton[i].D.stangasus.y+30, Buton[i].D.dreaptajos.x, Buton[i].D.stangasus.y);
-        outtextxy(Buton[i].D.stangasus.x+3,Buton[i].D.stangasus.y,Buton[i].text);
-    }
-    setcolor(WHITE);
-}
+    screen s;
 
-void checkDiagramButtons(int xm, int ym, int&y) //maria
-{
-    //actualizeaza y-ul diagramei in functie de butonul apasat, sau se intoarce la meniul principal
-    int comanda=0, butonul_apasat;
-    butonul_apasat=butonAles();
-    //cout << butonul_apasat<<' ';
-    if (butonul_apasat!=0)
-    {
-        comanda=butonul_apasat;
-        if(comanda==1) //SCROLLU
-        {
-            y+=50;
-            return;
-        }
-        else if(comanda==2) //SCROLLD
-        {
-            y-=50;
-            return;
-        }
-        else if(comanda==3) //BACK
-        {
-            apeleazaMeniulPrincipal();
-            comanda=5;
-        }
-    }
-}
+    info_button info;
+    settings_button settings;
+    start_button start;
+    chat_button chat;
+    exit_button exitt;
 
-void draw_diagram(int y) //david
+    diagram_button diagram;
+    presets_button presets;
+    back_button bck;
+
+    atribuire_button atribuire;
+    daca_button daca;
+    pentru_button pentru;
+    cat_timp_button cat_timp;
+    pana_cand_button pana_cand;
+    cazuri_button cazuri;
+    back_info_button back_info;
+
+    language_button language;
+    back_settings_button back_settings;
+
+
+
+void button::draw_menu()
 {
-    int noofsentences = 0;
-    int drawy = y;
-    read_code(noofsentences);
-    ///initialize arbitrary root
-    node*root = new node;
-    initialize_node(root,"radacina arborelui", -1, -1, 0);
-    ///call build forest function to mark nodes
-    build_forest(noofsentences, root);
-    //int y = defaultheight;
-    //setbkcolor(BLACK);
     setbkcolor(BLACK);
-    setlinestyle(0, 0, 3);
     cleardevice();
-    setcolor(WHITE);
-    int xm = -1, ym = -1;
-    desenare3(root, 25, drawy, DIAGRAM_WIDTH, xm, ym);
-    drawscrollbutton();
-    setbkcolor(BLACK);
-    int scrolloffset = 0;
-    while(1)
+
+    //we create the buttons and we put the text inside
+    {
+        start.create_button();
+        info.create_button();
+        settings.create_button();
+        exitt.create_button();
+        chat.create_button();
+
+        start.put_text();
+        info.put_text();
+        settings.put_text();
+        exitt.put_text();
+
+        //exitt.open_image();
+    }
+}
+
+void button::search_for_mouse_activity()
+{
+    bool clicked = false;
+    int chosen=0, command = 0;
+    while(!clicked)
     {
         if(ismouseclick(WM_LBUTTONDOWN))
         {
-            drawy = y+scrolloffset;
-            //setcolor(BLACK);
-            //getmouseclick(WM_LBUTTONDOWN, xm, ym);
-            xm = mousex();
-            ym = mousey();
-            //cout << xm << " " << ym << endl;
-            checkDiagramButtons(xm , ym, scrolloffset);
-            setbkcolor(BLACK);
-            cleardevice();
-            setlinestyle(0, 0, 3);
-            desenare3(root, 25, drawy, DIAGRAM_WIDTH, xm, ym);
-            drawscrollbutton();
-            //cout <<  " | scrolloffset: " << scrolloffset<< endl;
-            //afisare(root);
+            if(curent == 0 && !clicked)
+            {
+                if(start.is_inside_button())
+                {
+                    chosen = 1;
+                    clicked = true;
+                    curent = 1;
+                }
+                else if(info.is_inside_button())
+                {
+                    chosen = 2;
+                    clicked = true;
+                    curent = 2;
+                }
+                else if(settings.is_inside_button())
+                {
+                    chosen = 3;
+                    clicked = true;
+                    curent = 3;
+                }
+                else if(chat.is_inside_button())
+                {
+                    chosen = 4;
+                    clicked = true;
+                    curent = 4;
+                }
+                else if(exitt.is_inside_button())
+                {
+                    chosen = 5;
+                    clicked = true;
+                    curent = 0;
+                }
+            }
+            else if(curent == 1 && !clicked)
+            {
+                if(diagram.is_inside_button())
+                {
+                    chosen = 6;
+                    clicked = true;
+                }
+                else if(presets.is_inside_button())
+                {
+                    chosen = 7;
+                    clicked = true;
+                }
+                else if(bck.is_inside_button())
+                {
+                    chosen = 8;
+                    clicked = true;
+                    curent = 0;
+                }
+            }
+            else if(curent == 2 && !clicked)
+            {
+                if(atribuire.is_inside_button())
+                {
+                    chosen = 9;
+                    clicked = true;
+                }
+                else if(daca.is_inside_button())
+                {
+                    chosen = 10;
+                    clicked = true;
+                }
+                else if(pentru.is_inside_button())
+                {
+                    chosen = 11;
+                    clicked = true;
+                }
+                else if(cat_timp.is_inside_button())
+                {
+                    chosen = 12;
+                    clicked = true;
+                }
+                else if(pana_cand.is_inside_button())
+                {
+                    chosen = 13;
+                    clicked = true;
+                }
+                else if(cazuri.is_inside_button())
+                {
+                    chosen = 14;
+                    clicked = true;
+                }
+                else if(back_info.is_inside_button())
+                {
+                    chosen = 15;
+                    clicked = true;
+                    curent = 0;
+                }
+            }
+            else if(curent == 3)
+            {
+                if(language.is_inside_button())
+                {
+                    chosen = 16;
+                    clicked = true;
+                }
+                else if(back_settings.is_inside_button())
+                {
+                    chosen = 17;
+                    clicked = true;
+                    curent = 0;
+                }
+            }
         }
     }
-}
-void apeleazaMeniulPrincipal() //maria
-{
-    setbkcolor(COLOR(56, 0, 100)); //mov
-    cleardevice();
-    deseneazaMeniul();
-    int comanda=0, butonul_apasat;
-    do
+    if(chosen!=0)
     {
-        butonul_apasat=butonAles();
-        if (butonul_apasat!=0)
-            {
-                comanda=butonul_apasat;
-                if(comanda==4) //EXIT
-                    exit(0);
-                else
-                    if(comanda==1) //START
-                        InsereazaPseudocod();
-                else
-                    if(comanda==2) //LANGUAGES
-                    {
-                       meniuLimbi();
-                       comanda=5;
-                    }
-                else
-                    if (comanda==3) //DIAGRAM
-                    {
-                    draw_diagram(defaultheight);
-                    }
-            }
+        command = chosen;
+        if(command == 1)
+            start.open_program_start();
+        else if(command == 2)
+            info.open_program_info();
+        else if(command == 3)
+            settings.open_program_settings();
+        else if(command == 4)
+            chat.open_chat();
+        else if(command == 5)
+            exitt.close_program();
+        //}
+        //else if(command == 5)
+            //chat.open_chat();
+        //else if(command == 6)
+            //chat.open_chat();
+        else if(command == 8)
+            bck.draw_menu();
+        else if(command == 15)
+            back_info.draw_menu();
+        else if(command == 17)
+            back_settings.draw_menu();
     }
-    while(comanda!=5);
+
 }
-void draw_menu()
-{
-    initwindow(WINDOW_WIDTH,WINDOW_HEIGHT,"Nassi - Shneiderman diagram");
-    apeleazaMeniulPrincipal();
-    getch();
-    closegraph();
-}
+
+
+
+
 int main()
 {
-    draw_menu();
+    screen s;
+    //initialize the main screen
+    {
+        s.img="miaumiau.jpg";
+        s.open_image();
+    }
+
+    //info for buttons
+    {
+        strcpy(start.text, "Start");
+        strcpy(info.text, "Info");
+        strcpy(settings.text, "Settings");
+        strcpy(exitt.text, "X");
+
+        start.top = s.swidth/2 - start.width/2, start.left = s.sheight/4, start.bottom = s.swidth/2 + start.width/2, start.right = s.sheight/4 + start.height;
+        info.top = s.swidth/2 - info.width/2, info.left = s.sheight/4 + info.height+70, info.bottom = s.swidth/2 + info.width/2, info.right = s.sheight/4 + 2*info.height + 70;
+        settings.top = s.swidth/2 - settings.width/2, settings.left = s.sheight/4 +140 + 2*settings.height, settings.bottom = s.swidth/2 + settings.width/2, settings.right = s.sheight/4 + 3*settings.height +140;
+
+        exitt.top = 50, exitt.left = 50, exitt.bottom = 100, exitt.right = 100;
+        chat.top = s.swidth-100, chat.left = s.sheight-100, chat.bottom = s.swidth-50, chat.right = s.sheight-50;
+    }
+
+
+    start.draw_menu();
+    while(!ok)
+    {
+        start.search_for_mouse_activity();
+    }
+    closegraph();
     return 0;
 }
